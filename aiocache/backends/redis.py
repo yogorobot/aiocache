@@ -245,7 +245,7 @@ class RedisBackend:
                         "minsize": self.pool_min_size,
                         "maxsize": self.pool_max_size,
                     }
-                    if AIOREDIS_MAJOR_VERSION == 0:
+                    if AIOREDIS_MAJOR_VERSION == 1:
                         kwargs["create_connection_timeout"] = self.create_connection_timeout
 
                     self._pool = await aioredis.create_pool((self.endpoint, self.port), **kwargs)
