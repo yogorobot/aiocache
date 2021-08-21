@@ -34,12 +34,15 @@ def conn(func):
                         _conn = aioredis.Redis(_conn)
                     return await func(self, *args, _conn=_conn, **kwargs)
             else:
-                _conn = aioredis.Redis(connection_pool=pool)
-                _conn.connection = await _conn.connection_pool.get_connection("_")
                 try:
+                    _conn = aioredis.Redis(connection_pool=pool)
+                    _conn.connection = await _conn.connection_pool.get_connection("_")
                     return await func(self, *args, _conn=_conn, **kwargs)
                 finally:
-                    await _conn.connection_pool.release(_conn.connection)
+                    conn = _conn.connection
+                    if conn:
+                        _conn.connection = None
+                        await _conn.connection_pool.release(conn)
 
         return await func(self, *args, _conn=_conn, **kwargs)
 
@@ -116,8 +119,13 @@ class RedisBackend:
     async def release_conn(self, _conn):
         if AIOREDIS_MAJOR_VERSION == 0:
             self._pool.release(_conn)
-        else:
+        elif AIOREDIS_MAJOR_VERSION == 1:
             self._pool.release(_conn.connection)
+        else:
+            conn = _conn.connection
+            if conn:
+                _conn.connection = None
+                await _conn.connection_pool.release(conn)
 
     @conn
     async def _get(self, key, encoding="utf-8", _conn=None):

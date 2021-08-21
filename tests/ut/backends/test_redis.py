@@ -116,8 +116,10 @@ class TestRedisBackend:
         await redis.release_conn(conn)
         if AIOREDIS_MAJOR_VERSION == 0:
             redis._pool.release.assert_called_with(conn)
-        else:
+        elif AIOREDIS_MAJOR_VERSION == 1:
             redis._pool.release.assert_called_with(conn.connection)
+        else:
+            conn.connection_pool.release.assert_called_with(conn)
 
     @pytest.mark.asyncio
     async def test_get_pool_sets_pool(self, redis, redis_pool, create_pool):
