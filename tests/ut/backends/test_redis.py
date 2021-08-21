@@ -6,7 +6,7 @@ from asynctest import CoroutineMock, MagicMock, patch, ANY
 from aiocache import RedisCache
 from aiocache.base import BaseCache
 from aiocache.serializers import JsonSerializer
-from aiocache.backends.redis import RedisBackend, conn, AIOREDIS_BEFORE_ONE
+from aiocache.backends.redis import RedisBackend, conn, AIOREDIS_MAJOR_VERSION
 
 
 @pytest.fixture
@@ -108,7 +108,7 @@ class TestRedisBackend:
     async def test_release_conn(self, redis):
         conn = await redis.acquire_conn()
         await redis.release_conn(conn)
-        if AIOREDIS_BEFORE_ONE:
+        if AIOREDIS_MAJOR_VERSION == 0:
             redis._pool.release.assert_called_with(conn)
         else:
             redis._pool.release.assert_called_with(conn.connection)
@@ -139,7 +139,7 @@ class TestRedisBackend:
     async def test_get_pool_calls_create_pool(self, redis, create_pool):
         redis._pool = None
         await redis._get_pool()
-        if AIOREDIS_BEFORE_ONE:
+        if AIOREDIS_MAJOR_VERSION == 0:
             create_pool.assert_called_with(
                 (redis.endpoint, redis.port),
                 db=redis.db,
