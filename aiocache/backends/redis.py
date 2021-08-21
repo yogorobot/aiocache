@@ -129,7 +129,10 @@ class RedisBackend:
 
     @conn
     async def _get(self, key, encoding="utf-8", _conn=None):
-        return await _conn.get(key, encoding=encoding)
+        if AIOREDIS_MAJOR_VERSION < 2:
+            return await _conn.get(key, encoding=encoding)
+        else:
+            return await _conn.get(key)
 
     @conn
     async def _gets(self, key, encoding="utf-8", _conn=None):
@@ -137,7 +140,10 @@ class RedisBackend:
 
     @conn
     async def _multi_get(self, keys, encoding="utf-8", _conn=None):
-        return await _conn.mget(*keys, encoding=encoding)
+        if AIOREDIS_MAJOR_VERSION < 2:
+            return await _conn.mget(*keys, encoding=encoding)
+        else:
+            return await _conn.mget(*keys)
 
     @conn
     async def _set(self, key, value, ttl=None, _cas_token=None, _conn=None):
@@ -253,7 +259,7 @@ class RedisBackend:
 
     @conn
     async def _raw(self, command, *args, encoding="utf-8", _conn=None, **kwargs):
-        if command in ["get", "mget"]:
+        if command in ["get", "mget"] and AIOREDIS_MAJOR_VERSION < 2:
             kwargs["encoding"] = encoding
         return await getattr(_conn, command)(*args, **kwargs)
 
@@ -305,6 +311,7 @@ class RedisBackend:
                         "db": self.db,
                         "password": self.password,
                         "encoding": "utf-8",
+                        "decode_responses": True,
                         "socket_connect_timeout": self.create_connection_timeout,
                     }
                     self._pool = aioredis.ConnectionPool(**kwargs)

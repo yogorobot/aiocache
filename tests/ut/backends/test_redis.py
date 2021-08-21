@@ -184,13 +184,17 @@ class TestRedisBackend:
                 db=redis.db,
                 password=redis.password,
                 encoding="utf-8",
+                decode_responses=True,
                 socket_connect_timeout=redis.create_connection_timeout,
             )
 
     @pytest.mark.asyncio
     async def test_get(self, redis, redis_connection):
         await redis._get(pytest.KEY)
-        redis_connection.get.assert_called_with(pytest.KEY, encoding="utf-8")
+        if AIOREDIS_MAJOR_VERSION < 2:
+            redis_connection.get.assert_called_with(pytest.KEY, encoding="utf-8")
+        else:
+            redis_connection.get.assert_called_with(pytest.KEY)
 
     @pytest.mark.asyncio
     async def test_gets(self, mocker, redis, redis_connection):
@@ -375,7 +379,10 @@ class TestRedisBackend:
     async def test_raw(self, redis, redis_connection):
         await redis._raw("get", pytest.KEY)
         await redis._raw("set", pytest.KEY, 1)
-        redis_connection.get.assert_called_with(pytest.KEY, encoding=ANY)
+        if AIOREDIS_MAJOR_VERSION < 2:
+            redis_connection.get.assert_called_with(pytest.KEY, encoding=ANY)
+        else:
+            redis_connection.get.assert_called_with(pytest.KEY)
         redis_connection.set.assert_called_with(pytest.KEY, 1)
 
     @pytest.mark.asyncio
