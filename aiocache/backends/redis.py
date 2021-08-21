@@ -17,34 +17,88 @@ if aioredis.__version__.startswith("0."):
     AIOREDIS_MAJOR_VERSION = 0
 elif aioredis.__version__.startswith("1."):
     AIOREDIS_MAJOR_VERSION = 1
-elif aioredis.__version__.startswith("2."):
+else:
     AIOREDIS_MAJOR_VERSION = 2
+
+_NOTSET = object()
+
+if AIOREDIS_MAJOR_VERSION >= 2:
+    from aioredis import Connection as _Connection, ConnectionPool as _ConnectionPool
+
+    class Connection(_Connection):
+        def __init__(self, *args, **kwargs):
+            super(Connection, self).__init__(*args, **kwargs)
+            self._encoding = _NOTSET
+
+        async def read_response(self):
+            """Hack to imitate an API level encoding support"""
+            response = await super(Connection, self).read_response()
+            response = await self.encode_decode_response(response)
+            return response
+
+        def encode_decode_response(self, response):
+            if self._encoding != _NOTSET:
+                if self._encoding is None:
+                    if isinstance(response, list):
+                        response = [
+                            value.encode("utf-8", errors="replace")
+                            if isinstance(value, str)
+                            else value
+                            for value in response
+                        ]
+                    elif isinstance(response, str):
+                        response = response.encode("utf-8")
+                else:
+                    if isinstance(response, list):
+                        response = [
+                            value.decode(self._encoding, errors="replace")
+                            if isinstance(value, bytes)
+                            else value
+                            for value in response
+                        ]
+                    elif isinstance(response, bytes):
+                        response = response.decode(self._encoding, errors="replace")
+            return response
+
+    class ConnectionPool(_ConnectionPool):
+        def __init__(self, *args, **kwargs):
+            super(ConnectionPool, self).__init__(*args, **kwargs)
+            self.connection_class = Connection
 
 
 def conn(func):
     @functools.wraps(func)
     async def wrapper(self, *args, _conn=None, **kwargs):
-        if _conn is None:
-
-            pool = await self._get_pool()
-            if AIOREDIS_MAJOR_VERSION < 2:
+        if AIOREDIS_MAJOR_VERSION < 2:
+            if _conn is None:
+                pool = await self._get_pool()
                 conn_context = await pool
                 with conn_context as _conn:
                     if AIOREDIS_MAJOR_VERSION != 0:
                         _conn = aioredis.Redis(_conn)
                     return await func(self, *args, _conn=_conn, **kwargs)
-            else:
+            return await func(self, *args, _conn=_conn, **kwargs)
+        else:
+            if _conn is None:
+                pool = await self._get_pool()
                 try:
                     _conn = aioredis.Redis(connection_pool=pool)
                     _conn.connection = await _conn.connection_pool.get_connection("_")
+                    _conn.connection._encoding = kwargs.pop("encoding", _NOTSET)
                     return await func(self, *args, _conn=_conn, **kwargs)
                 finally:
                     conn = _conn.connection
                     if conn:
+                        _conn.connection._encoding = _NOTSET
                         _conn.connection = None
                         await _conn.connection_pool.release(conn)
-
-        return await func(self, *args, _conn=_conn, **kwargs)
+            try:
+                _conn.connection._encoding = kwargs.pop("encoding", _NOTSET)
+                return await func(self, *args, _conn=_conn, **kwargs)
+            finally:
+                conn = _conn.connection
+                if conn:
+                    _conn.connection._encoding = _NOTSET
 
     return wrapper
 
@@ -152,7 +206,7 @@ class RedisBackend:
         if ttl is None:
             return await _conn.set(key, value)
         if isinstance(ttl, float) and AIOREDIS_MAJOR_VERSION >= 2:
-            ttl = int(ttl*1000)
+            ttl = int(ttl * 1000)
             return await _conn.psetex(key, ttl, value)
         return await _conn.setex(key, ttl, value)
 
@@ -198,7 +252,7 @@ class RedisBackend:
             pipeline = conn.pipeline(transaction=True)
             await pipeline.execute_command("MSET", *flattened)
             if isinstance(ttl, float):
-                ttl = int(ttl*1000)
+                ttl = int(ttl * 1000)
                 for key in flattened[::2]:
                     pipeline.pexpire(key, time=ttl)
             else:
@@ -314,7 +368,7 @@ class RedisBackend:
                         "decode_responses": True,
                         "socket_connect_timeout": self.create_connection_timeout,
                     }
-                    self._pool = aioredis.ConnectionPool(**kwargs)
+                    self._pool = ConnectionPool(**kwargs)
 
             return self._pool
 
