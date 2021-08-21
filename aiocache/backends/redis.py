@@ -1,11 +1,17 @@
 import asyncio
 import itertools
 import functools
+import warnings
 
 import aioredis
 
 from aiocache.base import BaseCache
 from aiocache.serializers import JsonSerializer
+
+try:
+    from aioredis.exceptions import ResponseError as IncrbyException
+except ImportError:
+    from aioredis.errors import ReplyError as IncrbyException
 
 if aioredis.__version__.startswith("0."):
     AIOREDIS_MAJOR_VERSION = 0
@@ -21,11 +27,19 @@ def conn(func):
         if _conn is None:
 
             pool = await self._get_pool()
-            conn_context = await pool
-            with conn_context as _conn:
-                if AIOREDIS_MAJOR_VERSION != 0:
-                    _conn = aioredis.Redis(_conn)
-                return await func(self, *args, _conn=_conn, **kwargs)
+            if AIOREDIS_MAJOR_VERSION < 2:
+                conn_context = await pool
+                with conn_context as _conn:
+                    if AIOREDIS_MAJOR_VERSION != 0:
+                        _conn = aioredis.Redis(_conn)
+                    return await func(self, *args, _conn=_conn, **kwargs)
+            else:
+                _conn = aioredis.Redis(connection_pool=pool)
+                _conn.connection = await _conn.connection_pool.get_connection("_")
+                try:
+                    return await func(self, *args, _conn=_conn, **kwargs)
+                finally:
+                    await _conn.connection_pool.release(_conn.connection)
 
         return await func(self, *args, _conn=_conn, **kwargs)
 
@@ -90,9 +104,13 @@ class RedisBackend:
 
     async def acquire_conn(self):
         await self._get_pool()
-        conn = await self._pool.acquire()
-        if AIOREDIS_MAJOR_VERSION != 0:
-            conn = aioredis.Redis(conn)
+        if AIOREDIS_MAJOR_VERSION < 2:
+            conn = await self._pool.acquire()
+            if AIOREDIS_MAJOR_VERSION != 0:
+                conn = aioredis.Redis(conn)
+        else:
+            conn = aioredis.Redis(connection_pool=self._pool)
+            conn.connection = await conn.connection_pool.get_connection("_")
         return conn
 
     async def release_conn(self, _conn):
@@ -171,7 +189,7 @@ class RedisBackend:
     async def _increment(self, key, delta, _conn=None):
         try:
             return await _conn.incrby(key, delta)
-        except aioredis.errors.ReplyError:
+        except IncrbyException:
             raise TypeError("Value is not an integer") from None
 
     @conn
@@ -210,18 +228,40 @@ class RedisBackend:
     async def _get_pool(self):
         async with self._pool_lock:
             if self._pool is None:
-                kwargs = {
-                    "db": self.db,
-                    "password": self.password,
-                    "loop": self._loop,
-                    "encoding": "utf-8",
-                    "minsize": self.pool_min_size,
-                    "maxsize": self.pool_max_size,
-                }
-                if AIOREDIS_MAJOR_VERSION != 0:
-                    kwargs["create_connection_timeout"] = self.create_connection_timeout
+                if AIOREDIS_MAJOR_VERSION < 2:
+                    kwargs = {
+                        "db": self.db,
+                        "password": self.password,
+                        "loop": self._loop,
+                        "encoding": "utf-8",
+                        "minsize": self.pool_min_size,
+                        "maxsize": self.pool_max_size,
+                    }
+                    if AIOREDIS_MAJOR_VERSION == 0:
+                        kwargs["create_connection_timeout"] = self.create_connection_timeout
 
-                self._pool = await aioredis.create_pool((self.endpoint, self.port), **kwargs)
+                    self._pool = await aioredis.create_pool((self.endpoint, self.port), **kwargs)
+                else:
+                    if self._loop is not None:
+                        warnings.warn(
+                            "Parameter 'loop' has been obsolete since aioredis 2.0.0.",
+                            DeprecationWarning,
+                        )
+                    if self.pool_min_size != 1:
+                        warnings.warn(
+                            "Parameter 'pool_min_size' has been obsolete since aioredis 2.0.0.",
+                            DeprecationWarning,
+                        )
+                    kwargs = {
+                        "max_connections": self.pool_max_size,
+                        "host": self.endpoint,
+                        "port": self.port,
+                        "db": self.db,
+                        "password": self.password,
+                        "encoding": "utf-8",
+                        "socket_connect_timeout": self.create_connection_timeout,
+                    }
+                    self._pool = aioredis.ConnectionPool(**kwargs)
 
             return self._pool
 

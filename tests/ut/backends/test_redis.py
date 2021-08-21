@@ -29,6 +29,8 @@ def redis_connection():
     conn.keys = CoroutineMock()
     conn.multi_exec = MagicMock(return_value=conn)
     conn.execute = CoroutineMock()
+    conn.connection_pool.get_connection = CoroutineMock(return_value=conn)
+    conn.connection_pool.release = CoroutineMock()
     return conn
 
 
@@ -58,8 +60,12 @@ def redis(redis_pool):
 
 @pytest.fixture
 def create_pool():
-    with patch("aiocache.backends.redis.aioredis.create_pool") as create_pool:
-        yield create_pool
+    if AIOREDIS_MAJOR_VERSION < 2:
+        with patch("aiocache.backends.redis.aioredis.create_pool") as create_pool:
+            yield create_pool
+    else:
+        with patch("aiocache.backends.redis.aioredis.ConnectionPool") as create_pool:
+            yield create_pool
 
 
 @pytest.fixture(autouse=True)
@@ -149,7 +155,7 @@ class TestRedisBackend:
                 minsize=redis.pool_min_size,
                 maxsize=redis.pool_max_size,
             )
-        else:
+        elif AIOREDIS_MAJOR_VERSION == 1:
             create_pool.assert_called_with(
                 (redis.endpoint, redis.port),
                 db=redis.db,
@@ -159,6 +165,16 @@ class TestRedisBackend:
                 minsize=redis.pool_min_size,
                 maxsize=redis.pool_max_size,
                 create_connection_timeout=redis.create_connection_timeout,
+            )
+        else:
+            create_pool.assert_called_with(
+                max_connections=redis.pool_max_size,
+                host=redis.endpoint,
+                port=redis.port,
+                db=redis.db,
+                password=redis.password,
+                encoding="utf-8",
+                socket_connect_timeout=redis.create_connection_timeout,
             )
 
     @pytest.mark.asyncio
@@ -268,7 +284,10 @@ class TestRedisBackend:
 
     @pytest.mark.asyncio
     async def test_increment_typerror(self, redis, redis_connection):
-        redis_connection.incrby.side_effect = aioredis.errors.ReplyError("msg")
+        if AIOREDIS_MAJOR_VERSION < 2:
+            redis_connection.incrby.side_effect = aioredis.errors.ReplyError("msg")
+        else:
+            redis_connection.incrby.side_effect = aioredis.exceptions.ResponseError("msg")
         with pytest.raises(TypeError):
             await redis._increment(pytest.KEY, 2)
 
