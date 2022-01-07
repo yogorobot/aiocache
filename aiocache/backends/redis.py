@@ -33,8 +33,7 @@ if AIOREDIS_MAJOR_VERSION >= 2:
         async def read_response(self):
             """Hack to imitate an API level encoding support"""
             response = await super(Connection, self).read_response()
-            response = await self.encode_decode_response(response)
-            return response
+            return self.encode_decode_response(response)
 
         def encode_decode_response(self, response):
             if self._encoding != _NOTSET:
