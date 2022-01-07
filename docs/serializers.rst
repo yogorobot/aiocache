@@ -62,6 +62,14 @@ MsgPackSerializer
 .. autoclass:: aiocache.serializers.MsgPackSerializer
   :members:
 
+..  _dillserializer:
+
+DillSerializer
+----------------
+
+.. autoclass:: aiocache.serializers.DillSerializer
+  :members:
+
 In case the current serializers are not covering your needs, you can always define your custom serializer as shown in ``examples/serializer_class.py``:
 
 .. literalinclude:: ../examples/serializer_class.py
