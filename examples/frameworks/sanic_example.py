@@ -25,7 +25,9 @@ async def expensive_call():
 
 async def reuse_data():
     cache = Cache(serializer=JsonSerializer())  # Not ideal to define here
-    data = await cache.get("my_custom_key")  # Note the key is defined in `cached` decorator
+    data = await cache.get(
+        "my_custom_key"
+    )  # Note the key is defined in `cached` decorator
     return data
 
 

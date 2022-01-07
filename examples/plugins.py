@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 
 class MyCustomPlugin(BasePlugin):
-
     async def pre_set(self, *args, **kwargs):
         logger.info("I'm the pre_set hook being called with %s %s" % (args, kwargs))
 
@@ -19,8 +18,8 @@ class MyCustomPlugin(BasePlugin):
 
 
 cache = Cache(
-    plugins=[HitMissRatioPlugin(), TimingPlugin(), MyCustomPlugin()],
-    namespace="main")
+    plugins=[HitMissRatioPlugin(), TimingPlugin(), MyCustomPlugin()], namespace="main"
+)
 
 
 async def run():

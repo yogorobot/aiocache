@@ -5,12 +5,17 @@ from collections import namedtuple
 from aiocache import cached, Cache
 from aiocache.serializers import PickleSerializer
 
-Result = namedtuple('Result', "content, status")
+Result = namedtuple("Result", "content, status")
 
 
 @cached(
-    ttl=10, cache=Cache.REDIS, key="key", serializer=PickleSerializer(),
-    port=6379, namespace="main")
+    ttl=10,
+    cache=Cache.REDIS,
+    key="key",
+    serializer=PickleSerializer(),
+    port=6379,
+    namespace="main",
+)
 async def cached_call():
     return Result("content", 200)
 

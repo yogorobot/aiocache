@@ -207,4 +207,6 @@ class TestAltSerializers:
         my_obj = MyType()
         cache.serializer = my_serializer
         await cache.set(pytest.KEY, my_obj)
-        assert await cache.get(pytest.KEY) == my_serializer.loads(my_serializer.dumps(my_obj))
+        assert await cache.get(pytest.KEY) == my_serializer.loads(
+            my_serializer.dumps(my_obj)
+        )

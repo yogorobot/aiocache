@@ -44,7 +44,7 @@ async def handle2(request):
 
 if __name__ == "__main__":
     app = web.Application()
-    app.router.add_get('/handle', handle)
-    app.router.add_get('/handle2', handle2)
+    app.router.add_get("/handle", handle)
+    app.router.add_get("/handle2", handle2)
 
     web.run_app(app)

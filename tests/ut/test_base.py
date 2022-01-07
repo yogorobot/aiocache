@@ -227,7 +227,11 @@ class TestBaseCache:
 
     @pytest.mark.parametrize(
         "namespace, expected",
-        ([None, "test" + pytest.KEY], ["", pytest.KEY], ["my_ns", "my_ns" + pytest.KEY]),
+        (
+            [None, "test" + pytest.KEY],
+            ["", pytest.KEY],
+            ["my_ns", "my_ns" + pytest.KEY],
+        ),
     )
     def test_build_key(self, set_test_namespace, base_cache, namespace, expected):
         assert base_cache.build_key(pytest.KEY, namespace=namespace) == expected
@@ -242,7 +246,9 @@ class TestBaseCache:
 
         await base_cache.add(pytest.KEY, "value")
 
-        base_cache._add.assert_called_once_with(pytest.KEY, "value", _conn=None, ttl=None)
+        base_cache._add.assert_called_once_with(
+            pytest.KEY, "value", _conn=None, ttl=None
+        )
 
     @pytest.mark.asyncio
     async def test_add_ttl_default(self, base_cache):
@@ -269,7 +275,9 @@ class TestBaseCache:
 
         await base_cache.add(pytest.KEY, "value", ttl=None)
 
-        base_cache._add.assert_called_once_with(pytest.KEY, "value", _conn=None, ttl=None)
+        base_cache._add.assert_called_once_with(
+            pytest.KEY, "value", _conn=None, ttl=None
+        )
 
     @pytest.mark.asyncio
     async def test_set_ttl_cache_default(self, base_cache):
@@ -340,7 +348,9 @@ class TestBaseCache:
         base_cache.ttl = 10
         base_cache._multi_set = CoroutineMock()
 
-        await base_cache.multi_set([[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=20)
+        await base_cache.multi_set(
+            [[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=20
+        )
 
         base_cache._multi_set.assert_called_once_with(
             [(pytest.KEY, "value"), (pytest.KEY_1, "value1")], _conn=None, ttl=20
@@ -351,7 +361,9 @@ class TestBaseCache:
         base_cache.ttl = 10
         base_cache._multi_set = CoroutineMock()
 
-        await base_cache.multi_set([[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=None)
+        await base_cache.multi_set(
+            [[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=None
+        )
 
         base_cache._multi_set.assert_called_once_with(
             [(pytest.KEY, "value"), (pytest.KEY_1, "value1")], _conn=None, ttl=None
@@ -422,7 +434,9 @@ class TestCache:
         mock_cache._exists = CoroutineMock(return_value=False)
         await mock_cache.add(pytest.KEY, "value", ttl=2)
 
-        mock_cache._add.assert_called_with(mock_cache._build_key(pytest.KEY), ANY, ttl=2, _conn=ANY)
+        mock_cache._add.assert_called_with(
+            mock_cache._build_key(pytest.KEY), ANY, ttl=2, _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_add.call_count == 1
         assert mock_cache.plugins[0].post_add.call_count == 1
 
@@ -454,10 +468,15 @@ class TestCache:
 
     @pytest.mark.asyncio
     async def test_mset(self, mock_cache):
-        await mock_cache.multi_set([[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=2)
+        await mock_cache.multi_set(
+            [[pytest.KEY, "value"], [pytest.KEY_1, "value1"]], ttl=2
+        )
 
         mock_cache._multi_set.assert_called_with(
-            [(mock_cache._build_key(pytest.KEY), ANY), (mock_cache._build_key(pytest.KEY_1), ANY)],
+            [
+                (mock_cache._build_key(pytest.KEY), ANY),
+                (mock_cache._build_key(pytest.KEY_1), ANY),
+            ],
             ttl=2,
             _conn=ANY,
         )
@@ -469,13 +488,17 @@ class TestCache:
         mock_cache._multi_set = self.asleep
 
         with pytest.raises(asyncio.TimeoutError):
-            await mock_cache.multi_set([[pytest.KEY, "value"], [pytest.KEY_1, "value1"]])
+            await mock_cache.multi_set(
+                [[pytest.KEY, "value"], [pytest.KEY_1, "value1"]]
+            )
 
     @pytest.mark.asyncio
     async def test_exists(self, mock_cache):
         await mock_cache.exists(pytest.KEY)
 
-        mock_cache._exists.assert_called_with(mock_cache._build_key(pytest.KEY), _conn=ANY)
+        mock_cache._exists.assert_called_with(
+            mock_cache._build_key(pytest.KEY), _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_exists.call_count == 1
         assert mock_cache.plugins[0].post_exists.call_count == 1
 
@@ -490,7 +513,9 @@ class TestCache:
     async def test_increment(self, mock_cache):
         await mock_cache.increment(pytest.KEY, 2)
 
-        mock_cache._increment.assert_called_with(mock_cache._build_key(pytest.KEY), 2, _conn=ANY)
+        mock_cache._increment.assert_called_with(
+            mock_cache._build_key(pytest.KEY), 2, _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_increment.call_count == 1
         assert mock_cache.plugins[0].post_increment.call_count == 1
 
@@ -505,7 +530,9 @@ class TestCache:
     async def test_delete(self, mock_cache):
         await mock_cache.delete(pytest.KEY)
 
-        mock_cache._delete.assert_called_with(mock_cache._build_key(pytest.KEY), _conn=ANY)
+        mock_cache._delete.assert_called_with(
+            mock_cache._build_key(pytest.KEY), _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_delete.call_count == 1
         assert mock_cache.plugins[0].post_delete.call_count == 1
 
@@ -519,7 +546,9 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_expire(self, mock_cache):
         await mock_cache.expire(pytest.KEY, 1)
-        mock_cache._expire.assert_called_with(mock_cache._build_key(pytest.KEY), 1, _conn=ANY)
+        mock_cache._expire.assert_called_with(
+            mock_cache._build_key(pytest.KEY), 1, _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_expire.call_count == 1
         assert mock_cache.plugins[0].post_expire.call_count == 1
 
@@ -533,7 +562,9 @@ class TestCache:
     @pytest.mark.asyncio
     async def test_clear(self, mock_cache):
         await mock_cache.clear(pytest.KEY)
-        mock_cache._clear.assert_called_with(mock_cache._build_key(pytest.KEY), _conn=ANY)
+        mock_cache._clear.assert_called_with(
+            mock_cache._build_key(pytest.KEY), _conn=ANY
+        )
         assert mock_cache.plugins[0].pre_clear.call_count == 1
         assert mock_cache.plugins[0].post_clear.call_count == 1
 
@@ -591,7 +622,9 @@ class TestConn:
     async def test_conn_context_manager(self, conn):
         async with conn:
             assert conn._cache.acquire_conn.call_count == 1
-        conn._cache.release_conn.assert_called_with(conn._cache.acquire_conn.return_value)
+        conn._cache.release_conn.assert_called_with(
+            conn._cache.acquire_conn.return_value
+        )
 
     @pytest.mark.asyncio
     async def test_inject_conn(self, conn):

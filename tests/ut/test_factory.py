@@ -1,7 +1,14 @@
 import pytest
 from unittest.mock import patch, Mock
 
-from aiocache import SimpleMemoryCache, RedisCache, MemcachedCache, caches, Cache, AIOCACHE_CACHES
+from aiocache import (
+    SimpleMemoryCache,
+    RedisCache,
+    MemcachedCache,
+    caches,
+    Cache,
+    AIOCACHE_CACHES,
+)
 from aiocache.factory import _class_from_string, _create_cache
 from aiocache.exceptions import InvalidCacheType
 from aiocache.serializers import JsonSerializer, PickleSerializer
@@ -60,7 +67,9 @@ class TestCache:
             list(AIOCACHE_CACHES.keys())
         )
 
-    @pytest.mark.parametrize("scheme", [Cache.MEMORY.NAME, Cache.REDIS.NAME, Cache.MEMCACHED.NAME])
+    @pytest.mark.parametrize(
+        "scheme", [Cache.MEMORY.NAME, Cache.REDIS.NAME, Cache.MEMCACHED.NAME]
+    )
     def test_get_scheme_class(self, scheme):
         assert Cache.get_scheme_class(scheme) == AIOCACHE_CACHES[scheme]
 
@@ -68,9 +77,13 @@ class TestCache:
         with pytest.raises(InvalidCacheType):
             Cache.get_scheme_class("http")
 
-    @pytest.mark.parametrize("scheme", [Cache.MEMORY.NAME, Cache.REDIS.NAME, Cache.MEMCACHED.NAME])
+    @pytest.mark.parametrize(
+        "scheme", [Cache.MEMORY.NAME, Cache.REDIS.NAME, Cache.MEMCACHED.NAME]
+    )
     def test_from_url_returns_cache_from_scheme(self, scheme):
-        assert isinstance(Cache.from_url("{}://".format(scheme)), Cache.get_scheme_class(scheme))
+        assert isinstance(
+            Cache.from_url("{}://".format(scheme)), Cache.get_scheme_class(scheme)
+        )
 
     @pytest.mark.parametrize(
         "url,expected_args",
@@ -103,11 +116,15 @@ class TestCache:
         with patch("aiocache.factory.Cache") as mock:
             Cache.from_url(url)
 
-        mock.assert_called_once_with(mock.get_scheme_class.return_value, **expected_args)
+        mock.assert_called_once_with(
+            mock.get_scheme_class.return_value, **expected_args
+        )
 
     def test_calls_parse_uri_path_from_cache(self):
         with patch("aiocache.factory.Cache") as mock:
-            mock.get_scheme_class.return_value.parse_uri_path = Mock(return_value={"arg1": "arg1"})
+            mock.get_scheme_class.return_value.parse_uri_path = Mock(
+                return_value={"arg1": "arg1"}
+            )
             Cache.from_url("redis:///")
 
         mock.get_scheme_class.return_value.parse_uri_path.assert_called_once_with("/")
@@ -168,7 +185,9 @@ class TestCacheHandler:
                 }
             }
         )
-        cache = caches.create("default", namespace="whatever", endpoint="127.0.0.10", db=10)
+        cache = caches.create(
+            "default", namespace="whatever", endpoint="127.0.0.10", db=10
+        )
         assert cache.namespace == "whatever"
         assert cache.endpoint == "127.0.0.10"
         assert cache.db == 10
@@ -369,7 +388,9 @@ class TestCacheHandler:
                         "cache": "aiocache.RedisCache",
                         "endpoint": "127.0.0.10",
                         "port": 6378,
-                        "serializer": {"class": "aiocache.serializers.PickleSerializer"},
+                        "serializer": {
+                            "class": "aiocache.serializers.PickleSerializer"
+                        },
                         "plugins": [
                             {"class": "aiocache.plugins.HitMissRatioPlugin"},
                             {"class": "aiocache.plugins.TimingPlugin"},

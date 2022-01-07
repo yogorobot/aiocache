@@ -65,7 +65,9 @@ class Cache:
             assert issubclass(cache_class, BaseCache)
         except AssertionError as e:
             raise InvalidCacheType(
-                "Invalid cache type, you can only use {}".format(list(AIOCACHE_CACHES.keys()))
+                "Invalid cache type, you can only use {}".format(
+                    list(AIOCACHE_CACHES.keys())
+                )
             ) from e
         instance = cache_class.__new__(cache_class, **kwargs)
         instance.__init__(**kwargs)
@@ -81,7 +83,9 @@ class Cache:
             return cls._get_cache_class(scheme)
         except KeyError as e:
             raise InvalidCacheType(
-                "Invalid cache type, you can only use {}".format(list(AIOCACHE_CACHES.keys()))
+                "Invalid cache type, you can only use {}".format(
+                    list(AIOCACHE_CACHES.keys())
+                )
             ) from e
 
     @classmethod

@@ -3,31 +3,29 @@ import asyncio
 from aiocache import caches, Cache
 from aiocache.serializers import StringSerializer, PickleSerializer
 
-caches.set_config({
-    'default': {
-        'cache': "aiocache.SimpleMemoryCache",
-        'serializer': {
-            'class': "aiocache.serializers.StringSerializer"
-        }
-    },
-    'redis_alt': {
-        'cache': "aiocache.RedisCache",
-        'endpoint': "127.0.0.1",
-        'port': 6379,
-        'timeout': 1,
-        'serializer': {
-            'class': "aiocache.serializers.PickleSerializer"
+caches.set_config(
+    {
+        "default": {
+            "cache": "aiocache.SimpleMemoryCache",
+            "serializer": {"class": "aiocache.serializers.StringSerializer"},
         },
-        'plugins': [
-            {'class': "aiocache.plugins.HitMissRatioPlugin"},
-            {'class': "aiocache.plugins.TimingPlugin"}
-        ]
+        "redis_alt": {
+            "cache": "aiocache.RedisCache",
+            "endpoint": "127.0.0.1",
+            "port": 6379,
+            "timeout": 1,
+            "serializer": {"class": "aiocache.serializers.PickleSerializer"},
+            "plugins": [
+                {"class": "aiocache.plugins.HitMissRatioPlugin"},
+                {"class": "aiocache.plugins.TimingPlugin"},
+            ],
+        },
     }
-})
+)
 
 
 async def default_cache():
-    cache = caches.get('default')   # This always returns the same instance
+    cache = caches.get("default")  # This always returns the same instance
     await cache.set("key", "value")
 
     assert await cache.get("key") == "value"
@@ -38,7 +36,7 @@ async def default_cache():
 async def alt_cache():
     # This generates a new instance every time! You can also use `caches.create('alt')`
     # or even `caches.create('alt', namespace="test", etc...)` to override extra args
-    cache = caches.create(**caches.get_alias_config('redis_alt'))
+    cache = caches.create(**caches.get_alias_config("redis_alt"))
     await cache.set("key", "value")
 
     assert await cache.get("key") == "value"
@@ -60,7 +58,7 @@ def test_alias():
     loop.run_until_complete(cache.delete("key"))
     loop.run_until_complete(cache.close())
 
-    loop.run_until_complete(caches.get('default').close())
+    loop.run_until_complete(caches.get("default").close())
 
 
 if __name__ == "__main__":

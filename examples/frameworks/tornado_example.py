@@ -18,7 +18,7 @@ class MainHandler(tornado.web.RequestHandler):
 
 
 if __name__ == "__main__":
-    tornado.ioloop.IOLoop.configure('tornado.platform.asyncio.AsyncIOLoop')
+    tornado.ioloop.IOLoop.configure("tornado.platform.asyncio.AsyncIOLoop")
     app = tornado.web.Application([(r"/", MainHandler)])
     app.listen(8888)
     tornado.ioloop.IOLoop.current().start()

@@ -17,7 +17,7 @@ class MyTypeSchema(Schema):
 
     @post_load
     def build_object(self, data, **kwargs):
-        return MyType(data['x'], data['y'])
+        return MyType(data["x"], data["y"])
 
 
 def dumps(value):

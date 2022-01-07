@@ -6,7 +6,9 @@ from aiocache.serializers import JsonSerializer
 
 
 class MemcachedBackend:
-    def __init__(self, endpoint="127.0.0.1", port=11211, pool_size=2, loop=None, **kwargs):
+    def __init__(
+        self, endpoint="127.0.0.1", port=11211, pool_size=2, loop=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.endpoint = endpoint
         self.port = port
@@ -68,7 +70,9 @@ class MemcachedBackend:
         except aiomcache.exceptions.ValidationException as e:
             raise TypeError("aiomcache error: {}".format(str(e)))
         if not ret:
-            raise ValueError("Key {} already exists, use .set to update the value".format(key))
+            raise ValueError(
+                "Key {} already exists, use .set to update the value".format(key)
+            )
 
         return True
 

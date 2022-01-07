@@ -29,10 +29,10 @@ class MarshmallowSerializer(Schema, BaseSerializer):
 
     # marshmallow Schema class doesn't play nicely with multiple inheritance and won't call
     # BaseSerializer.__init__
-    encoding = 'utf-8'
+    encoding = "utf-8"
 
     @post_load
-    def build_my_type(self, data,  **kwargs):
+    def build_my_type(self, data, **kwargs):
         return RandomModel(**data)
 
     class Meta:

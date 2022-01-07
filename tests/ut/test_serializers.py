@@ -94,7 +94,8 @@ class TestPickleSerializer:
 
     def test_dumps(self, serializer):
         assert (
-            serializer.dumps("hi") == b"\x80\x04\x95\x06\x00\x00\x00\x00\x00\x00\x00\x8c\x02hi\x94."
+            serializer.dumps("hi")
+            == b"\x80\x04\x95\x06\x00\x00\x00\x00\x00\x00\x00\x8c\x02hi\x94."
         )
 
     def test_dumps_with_none(self, serializer):
@@ -245,7 +246,8 @@ class TestDillSerializer:
 
     def test_dumps(self, serializer):
         assert (
-            serializer.dumps("hi") == b"\x80\x04\x95\x06\x00\x00\x00\x00\x00\x00\x00\x8c\x02hi\x94."
+            serializer.dumps("hi")
+            == b"\x80\x04\x95\x06\x00\x00\x00\x00\x00\x00\x00\x8c\x02hi\x94."
         )
 
     def test_dumps_with_none(self, serializer):
